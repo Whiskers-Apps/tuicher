@@ -20,10 +20,10 @@ pub fn get_bookmarks_results(
         if keyword == "a" || keyword == "add" {
             let parts: Vec<&str> = search_text.split(" ").collect();
 
-            let name = if parts.len() >= 2 {
-                parts.clone().get(1).unwrap().to_string()
-            } else if parts.len() >= 3 {
+            let name = if parts.len() >= 3 {
                 parts.clone()[1..parts.len() - 1].join(" ")
+            } else if parts.len() >= 2 {
+                parts.clone().get(1).unwrap().to_string()
             } else {
                 "".to_string()
             };
