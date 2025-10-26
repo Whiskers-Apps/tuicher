@@ -1,3 +1,4 @@
+use regex::Regex;
 use sniffer_rs::sniffer::Sniffer;
 use tuicher_rs::{
     config::{get_config, SearchEngine},
@@ -60,6 +61,18 @@ pub fn invoke_search(text: String) -> Result<Vec<TUIResult>, String> {
                     .map_err(|e| e.to_string())?,
             );
         }
+    }
+
+    let url_regex = Regex::new(
+        r"https?://(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
+    ).map_err(|e|e.to_string())?;
+
+    let https_concat = format!("https://{}", &text);
+
+    if url_regex.is_match(&https_concat) {
+        return Ok(vec![TUIResult::new("Open", "url-search")
+            .set_secondary_text(&https_concat)
+            .set_action(Action::OpenURL(OpenURL::new(&https_concat)))]);
     }
 
     let mut apps: Vec<TUIResult> = get_apps()

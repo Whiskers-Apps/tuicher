@@ -32,4 +32,8 @@ notify = "8.2.0"
 walkdir = "2.5.0"
 tux-icons = "0.4.5"
 emojis = "0.8.0"
+reqwest = "0.12.24"
+tokio = { version = "1.47.2", features = ["full"] }
+tokio-macros = "2.6.0"
+regex = "1.12.2"
 

@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, fs, path::PathBuf};
 
 use sniffer_rs::sniffer::Sniffer;
 use tauri::Window;
@@ -15,6 +15,7 @@ pub fn get_bookmarks_results(
 ) -> Result<Vec<TUIResult>, Box<dyn Error>> {
     let query = Query::new(search_text)?;
     let search_text = search_text.to_string();
+    let show_favicon = config.show_bookmarks_favicon.clone();
 
     if let Some(keyword) = &query.keyword {
         if keyword == "a" || keyword == "add" {
@@ -77,21 +78,31 @@ pub fn get_bookmarks_results(
         }
     }
 
-    let results: Vec<TUIResult> = config
+    let mut results: Vec<TUIResult> = config
         .bookmarks
         .iter()
         .filter_map(|bookmark| {
             if sniffer.matches(&bookmark.name, &search_text) {
-                Some(
-                    TUIResult::new(&bookmark.name, &"bookmarks".to_string())
-                        .set_secondary_text(&bookmark.url)
-                        .set_action(Action::OpenURL(OpenURL::new(&bookmark.url))),
-                )
+                let mut result = TUIResult::new(&bookmark.name, &"bookmarks".to_string())
+                    .set_secondary_text(&bookmark.url)
+                    .set_action(Action::OpenURL(OpenURL::new(&bookmark.url)));
+
+                if show_favicon {
+                    let image_path = get_favicon_path(&bookmark).ok()?;
+
+                    if image_path.exists() {
+                        result.set_icon_path(&image_path);
+                    }
+                }
+
+                Some(result)
             } else {
                 None
             }
         })
         .collect();
+
+    results.sort_by(|a, b| a.text.to_lowercase().cmp(&b.text.to_lowercase()));
 
     Ok(results)
 }
@@ -113,9 +124,17 @@ pub fn on_bookmark_action(bookmark: Bookmark, window: Window) -> Result<(), Box<
                 url: add_bookmark.url.clone(),
             };
 
-            config.bookmarks.push(new_bookmark);
+            config.bookmarks.push(new_bookmark.clone());
 
             write_config(&config)?;
+
+            let bookmark_clone = new_bookmark.clone();
+
+            tokio::spawn(async move {
+                dowload_favicon(&bookmark_clone)
+                    .await
+                    .expect("Failed to download favicon");
+            });
         }
         Bookmark::Remove(remove_bookmark) => {
             let mut config = get_config()?;
@@ -132,4 +151,40 @@ pub fn on_bookmark_action(bookmark: Bookmark, window: Window) -> Result<(), Box<
 
     window.close()?;
     Ok(())
+}
+
+async fn dowload_favicon(bookmark: &BookmarkConfig) -> Result<(), Box<dyn Error>> {
+    let bookmark = bookmark.to_owned();
+
+    let bookmark_url = bookmark.url.replace("http://", "").replace("https://", "");
+    let favicon_url = format!("https://favicon.is/{bookmark_url}?larger=true");
+
+    let response = reqwest::get(&favicon_url).await?;
+    let bytes = response.bytes().await?;
+
+    let favicons_dir = dirs::cache_dir()
+        .ok_or_else(|| "Failed to get cache dir")?
+        .join("tuicher")
+        .join("favicons");
+
+    if !favicons_dir.exists() {
+        fs::create_dir_all(&favicons_dir)?;
+    }
+
+    let image_path = favicons_dir.clone().join(format!("{}.png", &bookmark.id));
+
+    fs::write(&image_path, &bytes)?;
+
+    Ok(())
+}
+
+fn get_favicon_path(bookmark: &BookmarkConfig) -> Result<PathBuf, Box<dyn Error>> {
+    let favicons_dir = dirs::cache_dir()
+        .ok_or_else(|| "Failed to get cache dir")?
+        .join("tuicher")
+        .join("favicons");
+
+    let image_path = favicons_dir.clone().join(format!("{}.png", &bookmark.id));
+
+    Ok(image_path)
 }

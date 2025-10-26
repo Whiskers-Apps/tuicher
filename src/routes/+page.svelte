@@ -98,17 +98,20 @@
 						/>
 					{/if}
 
-					{#if !result.icon_path && result.info === "app"}
-						<AppsIcon class="h-[40px] w-[40px] mr-4" />
+					{#if !result.icon_path}
+						{#if result.info === "app"}
+							<AppsIcon class="h-[40px] w-[40px] mr-4" />
+						{/if}
+
+						{#if result.info === "settings"}
+							<SettingsIcon class="h-[40px] w-[40px] mr-4" />
+						{/if}
+
+						{#if result.info === "search-engine" || result.info === "url-search"}
+							<GlobeIcon class="h-[40px] w-[40px] mr-4" />
+						{/if}
 					{/if}
 
-					{#if !result.icon_path && result.info === "settings"}
-						<SettingsIcon class="h-[40px] w-[40px] mr-4" />
-					{/if}
-
-					{#if !result.icon_path && result.info === "search-engine"}
-						<GlobeIcon class="h-[40px] w-[40px] mr-4" />
-					{/if}
 					<div class=" flex flex-col justify-center">
 						<p class="text-[1rem]">{result.text}</p>
 
