@@ -12,34 +12,25 @@ pub fn get_session_results(
 
     if sniffer.matches("shutdown/poweroff", search_text) {
         results.push(
-            TUIResult::new("Shutdown", "session-manager")
-                .set_action(Action::Session(Session::Shutdown))
-                .set_secondary_text("Shutdown the computer"),
+            TUIResult::new("Shutdown", "shutdown").set_action(Action::Session(Session::Shutdown)),
         );
     }
 
     if sniffer.matches("restart/reboot", search_text) {
         results.push(
-            TUIResult::new("Restart", "session-manager")
-                .set_action(Action::Session(Session::Restart))
-                .set_secondary_text("Restart the computer"),
+            TUIResult::new("Restart", "restart").set_action(Action::Session(Session::Restart)),
         );
     }
 
     if sniffer.matches("suspend", search_text) {
         results.push(
-            TUIResult::new("Suspend", "session-manager")
-                .set_action(Action::Session(Session::Suspend))
-                .set_secondary_text("Suspend the computer"),
+            TUIResult::new("Suspend", "suspend").set_action(Action::Session(Session::Suspend)),
         );
     }
 
     if sniffer.matches("logout", search_text) {
-        results.push(
-            TUIResult::new("Logout", "session-manager")
-                .set_action(Action::Session(Session::Logout))
-                .set_secondary_text("Logout of your desktop environment/window manager"),
-        );
+        results
+            .push(TUIResult::new("Logout", "logout").set_action(Action::Session(Session::Logout)));
     }
 
     Ok(results)
@@ -73,7 +64,7 @@ pub fn on_session_action(session: Session, window: Window) -> Result<(), Box<dyn
                 }
                 _ => {
                     Command::new("notify-send")
-                        .arg("'Missing Desktop Environment. Please Report'")
+                        .arg("Missing Config for This Environment")
                         .spawn()?;
                 }
             }
